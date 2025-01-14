@@ -1,0 +1,18 @@
+[package]
+name = "cncfwatchparty"
+authors = ["Michelle Dhanani <michelle@fermyon.com>"]
+description = "watch cncf spin sandbox application vote"
+version = "0.1.0"
+rust-version = "1.78"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+anyhow = "1"
+spin-sdk = "3.1.0"
+http = "1.2"
+serde_json = "1.0"
+
+[workspace]
