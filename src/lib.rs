@@ -49,6 +49,9 @@ fn parse_usernames(body: &[u8]) -> Vec<String> {
     let body_str = std::str::from_utf8(&body).unwrap();
     let json: serde_json::Value = serde_json::from_str(body_str).unwrap();
     for reaction in json.as_array().unwrap() {
+        if reaction["content"].as_str().unwrap() != "+1" {
+            continue;
+        }
         let username = reaction["user"]["login"].as_str().unwrap();
         usernames.push(username.to_string());
     }
