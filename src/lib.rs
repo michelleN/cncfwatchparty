@@ -1,6 +1,6 @@
 use serde_json;
 
-use http::StatusCode;
+use http::{response, StatusCode};
 use spin_sdk::http::{IntoResponse, Method, Request, Response};
 use spin_sdk::http_component;
 use spin_sdk::variables;
@@ -11,6 +11,20 @@ async fn handle_cncfwatchparty(req: Request) -> anyhow::Result<impl IntoResponse
     println!("Handling request to {:?}", req.header("spin-full-url"));
     // Create the outbound request object
     let token = variables::get("github_pat")?;
+
+    let toc = [
+        "linsun",
+        "angellk",
+        "dims",
+        "TheFoxAtWork",
+        "cathyhongzhang",
+        "kevin-wangzefeng",
+        "nikhita",
+        "kgamanji",
+        "rochaporto",
+        "mauilion",
+        "dzolotusky",
+    ];
 
     let request = Request::builder()
         .method(Method::Get)
@@ -26,12 +40,45 @@ async fn handle_cncfwatchparty(req: Request) -> anyhow::Result<impl IntoResponse
     if response.status() == &StatusCode::OK {
         // return body
 
+        let gif_url = "https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExd2Jnc3d3ZXB4NnY1NWgwNTl1dW52Y3U4cnE4cDg2cWNjZGdvMmhmMCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/5GoVLqeAOo6PK/giphy.gif";
         // grab usernames from response
-        let usernames = parse_usernames(response.body()).join("\n");
+        let (usernames, toc_votes) = parse_usernames_and_update_counter(response.body(), &toc);
+
+        // Generate the HTML content
+        let html_body = format!(
+            r#"
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <meta http-equiv="refresh" content="100"> <!-- Refresh every 100 seconds -->
+            <title>CNCF Watch Party</title>
+        </head>
+        <body>
+            <h1>TOC/BINDING VOTES SO FAR: {}</h1>
+            <h3>Please note 8 out of the 11 TOC votes are required for acceptance.</h3>
+            <img src="{}" alt="A cool GIF" />
+            <h1>Binding and Nonbinding Votes: {}</h1>
+            <ul>
+                {}
+            </ul>
+        </body>
+        </html>
+        "#,
+            toc_votes,
+            gif_url,
+            usernames.len(),
+            usernames
+                .iter()
+                .map(|username| format!("<li>{}</li>", username))
+                .collect::<String>(),
+        );
+
         return Ok(Response::builder()
             .status(200)
-            .header("content-type", "text/plain")
-            .body(usernames)
+            .header("content-type", "text/html")
+            .body(html_body)
             .build());
     }
     println!("Error: {:?}", response.status());
@@ -44,7 +91,8 @@ async fn handle_cncfwatchparty(req: Request) -> anyhow::Result<impl IntoResponse
         .build())
 }
 
-fn parse_usernames(body: &[u8]) -> Vec<String> {
+fn parse_usernames_and_update_counter(body: &[u8], toc_usernames: &[&str]) -> (Vec<String>, u32) {
+    let mut toc_votes = 0;
     let mut usernames = Vec::new();
     let body_str = std::str::from_utf8(&body).unwrap();
     let json: serde_json::Value = serde_json::from_str(body_str).unwrap();
@@ -53,7 +101,10 @@ fn parse_usernames(body: &[u8]) -> Vec<String> {
             continue;
         }
         let username = reaction["user"]["login"].as_str().unwrap();
+        if toc_usernames.contains(&username) {
+            toc_votes += 1;
+        }
         usernames.push(username.to_string());
     }
-    usernames
+    (usernames, toc_votes)
 }
