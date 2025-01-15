@@ -47,32 +47,59 @@ async fn handle_cncfwatchparty(req: Request) -> anyhow::Result<impl IntoResponse
         // Generate the HTML content
         let html_body = format!(
             r#"
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <meta http-equiv="refresh" content="100"> <!-- Refresh every 100 seconds -->
-            <title>CNCF Watch Party</title>
-        </head>
-        <body>
-            <h1>TOC/BINDING VOTES SO FAR: {}</h1>
-            <h3>Please note 8 out of the 11 TOC votes are required for acceptance.</h3>
-            <img src="{}" alt="A cool GIF" />
-            <h1>Binding and Nonbinding Votes: {}</h1>
-            <ul>
-                {}
-            </ul>
-        </body>
-        </html>
-        "#,
-            toc_votes,
-            gif_url,
-            usernames.len(),
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="refresh" content="100"> <!-- Refresh every 100 seconds -->
+    <title>CNCF Watch Party</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        body {{
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin-top: 50px;
+        }}
+        ul {{
+            list-style-type: none;
+            padding: 0;
+        }}
+    </style>
+</head>
+<body>
+    <h1>TOC/BINDING VOTES SO FAR: {}</h1>
+    <h3>Please note 8 out of the 11 TOC votes are required for acceptance.</h3>
+    <img src="{}" alt="A cool GIF" />
+    <h1>Binding and Nonbinding Votes: {}</h1>
+    <ul>
+        {}
+    </ul>
+
+    <script>
+        // Number of TOC votes
+        const tocVotes = {};
+
+        // Trigger confetti if tocVotes is 8 or higher
+        if (tocVotes >= 8) {{
+            confetti({{
+                particleCount: 100,
+                spread: 70,
+                origin: {{ y: 0.6 }}
+            }});
+        }}
+    </script>
+</body>
+</html>
+"#,
+            toc_votes,       // Injecting the number of TOC votes
+            gif_url,         // Injecting the GIF URL
+            usernames.len(), // Injecting the count of usernames
             usernames
                 .iter()
                 .map(|username| format!("<li>{}</li>", username))
-                .collect::<String>(),
+                .collect::<String>(), // Generating list items for usernames
+            toc_votes        // Reusing toc_votes for the JavaScript logic
         );
 
         return Ok(Response::builder()
