@@ -31,7 +31,7 @@ async fn handle_cncfwatchparty(req: Request) -> anyhow::Result<impl IntoResponse
         .header("Accept", "application/vnd.github+json")
         .header("Authorization", format!("Bearer {}", token))
         .header("User-Agent", "cncfwatchparty")
-        .uri("https://api.github.com/repos/cncf/sandbox/issues/comments/2590410827/reactions")
+        .uri("https://api.github.com/repos/cncf/sandbox/issues/comments/2590410827/reactions?per_page=100")
         .build();
 
     // Send the request and await the response
